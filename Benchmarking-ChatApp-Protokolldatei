@@ -1,0 +1,30 @@
+# 
+# Satzaufbau:
+#
+# 01 Messungstyp als String
+# 02 Implementierungstyp als String
+# 03 Anzahl Client-Threads
+# 04 Anzahl (geplante) Nachrichten je Client
+# 05 Durchschnittliche RTT
+# 06 Maximale RTT
+# 07 Minimale RTT
+# 08 Durchschnittliche Serverbearbeitungszeit
+# 09 Anzahl geplanter Requests/Responses
+# 10 Anzahl gesendeter Requests
+# 11 Anzahl empfangener Responses
+# 12 Anzahl verlorener Responses
+# 13 Anzahl aller Uebertragungswiederholungen (nur fuer UDP relevant)
+# 14 Anzahl aller vom Server gesendete Events-Nachrichten
+# 15 Anzahl aller vom Server empfangenen Event-Bestaetigungen (Confirm-Event)
+# 16 Anzahl aller vom Server nicht erhaltenen Event-Bestaetigungen
+# 17 Anzahl aller Wiederholungen von Events (fuer unzuverlaessige Verbindungen wie UDP)
+# 18 Maximale Heap-Size des Clients
+# 19 Startzeit der Messung
+# 20 Endezeit der Messung
+#
+# Beispiele
+#Variation der Threadanzahl, TCP-Implementation, 100, 10, 187, 269, 44, 66, 1000, 1000, 1000, 0, 0, 100000, 0, 0, 0, 106, 5.10.2015 8:35:30, 5.10.2015 8:35:36
+#Variation der Threadanzahl, TCP-Implementation, 100, 10, 160, 234, 23, 32, 1000, 1000, 1000, 0, 0, 100000, 0, 0, 0, 106, 5.10.2015 8:36:40, 5.10.2015 8:36:46
+#Variation der Threadanzahl, TCP-Implementation, 100, 100, 143, 184, 53, 553, 10000, 10000, 10000, 0, 0, 1000000, 0, 0, 0, 444, 5.10.2015 8:37:14, 5.10.2015 8:37:36
+#Variation der Threadanzahl, TCP-Implementation, 100, 10, 143, 209, 20, 34, 1000, 1000, 1000, 0, 0, 100000, 0, 0, 0, 116, 5.10.2015 8:43:36, 5.10.2015 8:43:41
+#Variation der Threadanzahl, TCP-Implementation, 100, 10, 107, 186, 24, 39, 1000, 1000, 1000, 0, 0, 100000, 0, 0, 0, 206, 5.10.2015 8:43:54, 5.10.2015 8:43:59

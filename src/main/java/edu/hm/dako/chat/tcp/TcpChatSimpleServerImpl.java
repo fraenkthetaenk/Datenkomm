@@ -472,14 +472,14 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 							ChatClientConversationStatus.REGISTERED);
 					break;
 
-				// //DIeser Case ist seler geschrieben und evt. nicht nötig
-				// case ChatPDU.LOGOUT_REQUEST:
-				// log.debug("Logout-Request-PDU fuer " +
-				// receivedPdu.getUserName() + " empfangen");
-				// closeConnection();
-				// clients.changeClientStatus(receivedPdu.getUserName(),
-				// ChatClientConversationStatus.UNREGISTERED);
-				// break;
+				// DIeser Case ist seler geschrieben und evt. nicht nötig
+				case ChatPDU.LOGOUT_REQUEST:
+					log.debug("Logout-Request-PDU fuer "
+							+ receivedPdu.getUserName() + " empfangen");
+					logout(receivedPdu, connection);
+					clients.changeClientStatus(receivedPdu.getUserName(),
+							ChatClientConversationStatus.UNREGISTERED);
+					break;
 
 				case ChatPDU.CHAT_MESSAGE_REQUEST:
 					ChatPDU pdu;
@@ -531,6 +531,37 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 				}
 			}
 		}
-	}
 
+		private void logout(ChatPDU receivedPdu, Connection con) {
+			ChatPDU pdu;
+			if (clients.existsClient(receivedPdu.getUserName())) {
+				log.debug("User in Clientliste: " + receivedPdu.getUserName());
+				clients.changeClientStatus(receivedPdu.getUserName(),
+						ChatClientConversationStatus.UNREGISTERING);
+				clients.deleteClient(receivedPdu.getUserName());
+				log.debug("User " + receivedPdu.getUserName()
+						+ " nun nicht mehr in Clientliste");
+				log.debug("Laenge der Clientliste: " + clients.size());
+
+				pdu = createLogoutEventPdu(receivedPdu);
+
+				sendLoginListUpdateEvent(pdu);
+
+				pdu = createLogoutResponsePdu(receivedPdu);
+
+				try {
+					if (clients.getClient(userName) != null) {
+						con.send(pdu);
+						log.debug("Logout-Response-PDU an "
+								+ receivedPdu.getUserName() + " gesendet");
+					}
+				} catch (Exception e) {
+					log.error("Senden einer Logout-Response-PDU an "
+							+ receivedPdu.getUserName() + " nicht moeglich");
+					ExceptionHandler.logException(e);
+				}
+
+			}
+		}
+	}
 }

@@ -406,7 +406,7 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 		// Neue Userliste zur Darstellung an User Interface uebergeben
 		log.debug("Empfangene Userliste: " + receivedPdu.getClients());
 		userInterface.setUserList(receivedPdu.getClients());
-		
+
 	}
 
 	/*
@@ -477,20 +477,35 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 								ExceptionHandler.logException(e);
 							}
 							break;
-					
+
 						default:
-							
+
 							log.debug("Ankommende PDU im Zustand "
 									+ getStatus() + " wird verworfen");
 						}
 						break;
 
 					case REGISTERED:
-
+					//	System.out.println(receivedPdu.getPduType());
 						switch (receivedPdu.getPduType()) {
+						
+//						case ChatPDU.LOGOUT_RESPONSE:
+//					
+//						
+//							// Login-Bestaetigung vom Server angekommen
+//
+//							setStatus(ChatClientConversationStatus.UNREGISTERED);
+//							userInterface.logoutComplete();
+//							userInterface.setBlock(true);
+//							Thread.currentThread().setName(
+//									"Listener" + "-" + userName);
+//							log.debug("Logout-Response-PDU fuer Client "
+//									+ receivedPdu.getUserName() + " empfangen");
+//
+//							break;
 
 						case ChatPDU.LOGIN_EVENT:
-						case ChatPDU.LOGOUT_EVENT:
+							// case ChatPDU.LOGOUT_EVENT:
 							// Meldung vom Server, dass sich die Liste der
 							// angemeldeten User veraendert hat
 							try {
@@ -499,11 +514,13 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 								ExceptionHandler.logException(e);
 							}
 							break;
-							
+
 						case ChatPDU.CHAT_MESSAGE_EVENT:
 						case ChatPDU.CHAT_MESSAGE_EVENT_CONFIRM:
-						userInterface.setMessageLine(receivedPdu.getUserName(),receivedPdu.getMessage() + "    DER DANK GEHT AN ALEX DEN SPASTEN");
-						break;
+							userInterface.setMessageLine(
+								receivedPdu.getUserName(),
+								receivedPdu.getMessage());
+							break;
 
 						default:
 							log.debug("Ankommende PDU im Zustand "
@@ -514,6 +531,23 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 					case UNREGISTERING:
 						switch (receivedPdu.getPduType()) {
 
+						case ChatPDU.LOGOUT_RESPONSE:
+							
+							
+							// Login-Bestaetigung vom Server angekommen
+
+							setStatus(ChatClientConversationStatus.UNREGISTERED);
+							userInterface.logoutComplete();
+							userInterface.setBlock(true);
+							Thread.currentThread().setName(
+									"Listener" + "-" + userName);
+							log.debug("Logout-Response-PDU fuer Client "
+									+ receivedPdu.getUserName() + " empfangen");
+
+							break;
+				
+							
+							
 						case ChatPDU.LOGIN_EVENT:
 						case ChatPDU.LOGOUT_EVENT:
 							// Meldung vom Server, dass sich die Liste der

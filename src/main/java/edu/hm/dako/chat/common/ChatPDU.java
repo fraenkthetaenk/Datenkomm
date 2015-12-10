@@ -20,7 +20,7 @@ public class ChatPDU implements Serializable {
     private int pduType; // Kommandos bzw. PDU-Typen
     								
     public final static int UNDEFINED = 0;
-    public final static int LOGIN_REQUEST = 1;
+	public final static int LOGIN_REQUEST = 1;
     public final static int LOGIN_RESPONSE = 2; 
     public final static int LOGOUT_REQUEST = 3;
     public final static int LOGOUT_RESPONSE = 4;

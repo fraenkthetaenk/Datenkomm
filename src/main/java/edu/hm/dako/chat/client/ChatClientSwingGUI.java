@@ -104,6 +104,8 @@ public class ChatClientSwingGUI extends JFrame implements ChatClientUserInterfac
 	public synchronized void logoutComplete() {
 		// TODO: Exit after Response received
 		log.debug("Logout vollstaendig erfolgt, Anwendung schliessen");
+		
+		
 		System.exit(0);
 	}
 

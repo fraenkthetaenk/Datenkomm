@@ -477,8 +477,10 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 					log.debug("Logout-Request-PDU fuer "
 							+ receivedPdu.getUserName() + " empfangen");
 					logout(receivedPdu, connection);
+					
 					clients.changeClientStatus(receivedPdu.getUserName(),
 							ChatClientConversationStatus.UNREGISTERED);
+					clients.deleteClient(receivedPdu.getUserName());
 					break;
 
 				case ChatPDU.CHAT_MESSAGE_REQUEST:
@@ -538,16 +540,17 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 				log.debug("User in Clientliste: " + receivedPdu.getUserName());
 				clients.changeClientStatus(receivedPdu.getUserName(),
 						ChatClientConversationStatus.UNREGISTERING);
-				clients.deleteClient(receivedPdu.getUserName());
+			
 				log.debug("User " + receivedPdu.getUserName()
 						+ " nun nicht mehr in Clientliste");
 				log.debug("Laenge der Clientliste: " + clients.size());
 
 				pdu = createLogoutEventPdu(receivedPdu);
-
+				
 				sendLoginListUpdateEvent(pdu);
 
 				pdu = createLogoutResponsePdu(receivedPdu);
+				
 
 				try {
 					if (clients.getClient(userName) != null) {

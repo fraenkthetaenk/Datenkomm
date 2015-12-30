@@ -381,6 +381,7 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 		requestPdu.setMessage(text);
 		messageCounter.getAndIncrement();
 		requestPdu.setSequenceNumber(messageCounter.get());
+		
 		try {
 			connection.send(requestPdu);
 			log.debug("Chat-Message-Request-PDU fuer Client " + name
@@ -486,7 +487,6 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 						break;
 
 					case REGISTERED:
-					//	System.out.println(receivedPdu.getPduType());
 						switch (receivedPdu.getPduType()) {
 						
 //						case ChatPDU.LOGOUT_RESPONSE:
@@ -505,7 +505,7 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 //							break;
 
 						case ChatPDU.LOGIN_EVENT:
-							// case ChatPDU.LOGOUT_EVENT:
+						case ChatPDU.LOGOUT_EVENT:
 							// Meldung vom Server, dass sich die Liste der
 							// angemeldeten User veraendert hat
 							try {
@@ -514,10 +514,12 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 								ExceptionHandler.logException(e);
 							}
 							break;
+						case ChatPDU.CHAT_MESSAGE_RESPONSE:
+							userInterface.setBlock(false);
+							break;
 
 						case ChatPDU.CHAT_MESSAGE_EVENT:
-						case ChatPDU.CHAT_MESSAGE_EVENT_CONFIRM:
-							userInterface.setMessageLine(
+								userInterface.setMessageLine(
 								receivedPdu.getUserName(),
 								receivedPdu.getMessage());
 							break;

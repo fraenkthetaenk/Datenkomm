@@ -488,6 +488,8 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 
 					pdu = createChatMessageEventPdu(receivedPdu);
 					sendMEssageUpdatePdu(pdu);
+					pdu = createChatMessageResponsePdu(receivedPdu);
+					sendMEssageUpdatePdu(pdu);
 					break;
 
 				default:

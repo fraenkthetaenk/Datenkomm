@@ -381,6 +381,7 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 		requestPdu.setMessage(text);
 		messageCounter.getAndIncrement();
 		requestPdu.setSequenceNumber(messageCounter.get());
+		userInterface.setBlock(true);
 		
 		try {
 			connection.send(requestPdu);
@@ -515,6 +516,7 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 							}
 							break;
 						case ChatPDU.CHAT_MESSAGE_RESPONSE:
+						
 							userInterface.setBlock(false);
 							break;
 

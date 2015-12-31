@@ -560,13 +560,13 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 								ExceptionHandler.logException(e);
 							}
 							break;
-
 						default:
 							log.debug("Ankommende PDU im Zustand "
 									+ getStatus() + " wird verworfen");
 							break;
 						}
 						break;
+					
 
 					case UNREGISTERED:
 						log.debug("Ankommende PDU im Zustand " + getStatus()

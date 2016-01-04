@@ -364,6 +364,58 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 		}
 	}
 
+	public void Login_Confirm(ChatPDU receivedPdu) {
+		ChatPDU requestPdu = new ChatPDU();
+		requestPdu.setPduType(ChatPDU.LOGIN_EVENT_CONFIRM);
+		requestPdu.setUserName(userName);
+		requestPdu.setEventUserName(receivedPdu.getEventUserName());
+		requestPdu.setClientThreadName(Thread.currentThread().getName());
+		requestPdu.setServerThreadName(receivedPdu.getServerThreadName());
+
+		try {
+			connection.send(requestPdu);
+			log.debug("Login-Event-Confirm-PDU fuer Client " + userName
+					+ " an Server gesendet");
+
+		} catch (Exception e) {
+			ExceptionHandler.logException(e);
+		}
+	}
+
+	public void Logout_Confirm(ChatPDU receivedPdu) {
+		ChatPDU requestPdu = new ChatPDU();
+		requestPdu.setPduType(ChatPDU.LOGOUT_EVENT_CONFIRM);
+		requestPdu.setUserName(userName);
+		requestPdu.setEventUserName(receivedPdu.getEventUserName());
+		requestPdu.setClientThreadName(Thread.currentThread().getName());
+		requestPdu.setServerThreadName(receivedPdu.getServerThreadName());
+
+		try {
+			connection.send(requestPdu);
+			log.debug("Logout-Event-Confirm-PDU fuer Client " + userName
+					+ " an Server gesendet");
+
+		} catch (Exception e) {
+			ExceptionHandler.logException(e);
+		}
+	}
+	
+	public void Message_Event(ChatPDU receivedPdu){
+		ChatPDU requestPdu = new ChatPDU();
+		requestPdu.setPduType(ChatPDU.CHAT_MESSAGE_EVENT_CONFIRM);
+		requestPdu.setUserName(userName);
+		requestPdu.setEventUserName(receivedPdu.getEventUserName());
+		requestPdu.setClientThreadName(Thread.currentThread().getName());
+		requestPdu.setServerThreadName(receivedPdu.getServerThreadName());
+		
+		try {
+			connection.send(requestPdu);
+			
+		} catch (Exception e) {
+			ExceptionHandler.logException(e);
+			}
+	}
+
 	/**
 	 * Senden einer Chat-Nachricht zur Verteilung an den Server
 	 * 
@@ -381,7 +433,7 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 		requestPdu.setMessage(text);
 		messageCounter.getAndIncrement();
 		requestPdu.setSequenceNumber(messageCounter.get());
-		
+
 		try {
 			connection.send(requestPdu);
 			log.debug("Chat-Message-Request-PDU fuer Client " + name
@@ -469,9 +521,16 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 							break;
 
 						case ChatPDU.LOGIN_EVENT:
+							Login_Confirm(receivedPdu);
+							try {
+								handleUserListEvent(receivedPdu);
+							} catch (Exception e) {
+								ExceptionHandler.logException(e);
+							}
+							break;
 						case ChatPDU.LOGOUT_EVENT:
-							// Meldung vom Server, dass sich die Liste der
-							// angemeldeten User veraendert hat
+
+							Logout_Confirm(receivedPdu);
 							try {
 								handleUserListEvent(receivedPdu);
 							} catch (Exception e) {
@@ -488,26 +547,32 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 
 					case REGISTERED:
 						switch (receivedPdu.getPduType()) {
-						
-//						case ChatPDU.LOGOUT_RESPONSE:
-//					
-//						
-//							// Login-Bestaetigung vom Server angekommen
-//
-//							setStatus(ChatClientConversationStatus.UNREGISTERED);
-//							userInterface.logoutComplete();
-//							userInterface.setBlock(true);
-//							Thread.currentThread().setName(
-//									"Listener" + "-" + userName);
-//							log.debug("Logout-Response-PDU fuer Client "
-//									+ receivedPdu.getUserName() + " empfangen");
-//
-//							break;
+
+						// case ChatPDU.LOGOUT_RESPONSE:
+						//
+						//
+						// // Login-Bestaetigung vom Server angekommen
+						//
+						// setStatus(ChatClientConversationStatus.UNREGISTERED);
+						// userInterface.logoutComplete();
+						// userInterface.setBlock(true);
+						// Thread.currentThread().setName(
+						// "Listener" + "-" + userName);
+						// log.debug("Logout-Response-PDU fuer Client "
+						// + receivedPdu.getUserName() + " empfangen");
+						//
+						// break;
 
 						case ChatPDU.LOGIN_EVENT:
+							Login_Confirm(receivedPdu);
+							try {
+								handleUserListEvent(receivedPdu);
+							} catch (Exception e) {
+								ExceptionHandler.logException(e);
+							}
+							break;
 						case ChatPDU.LOGOUT_EVENT:
-							// Meldung vom Server, dass sich die Liste der
-							// angemeldeten User veraendert hat
+							Logout_Confirm(receivedPdu);
 							try {
 								handleUserListEvent(receivedPdu);
 							} catch (Exception e) {
@@ -519,11 +584,11 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 							break;
 
 						case ChatPDU.CHAT_MESSAGE_EVENT:
-								userInterface.setMessageLine(
-								receivedPdu.getUserName(),
-								receivedPdu.getMessage());
-							break;
 
+							userInterface.setMessageLine(
+									receivedPdu.getUserName(),
+									receivedPdu.getMessage());
+							break;
 						default:
 							log.debug("Ankommende PDU im Zustand "
 									+ getStatus() + " wird verworfen");
@@ -534,8 +599,7 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 						switch (receivedPdu.getPduType()) {
 
 						case ChatPDU.LOGOUT_RESPONSE:
-							
-							
+
 							// Login-Bestaetigung vom Server angekommen
 
 							setStatus(ChatClientConversationStatus.UNREGISTERED);
@@ -547,13 +611,19 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 									+ receivedPdu.getUserName() + " empfangen");
 
 							break;
-				
-							
-							
+
 						case ChatPDU.LOGIN_EVENT:
+							
+							Login_Confirm(receivedPdu);
+							try {
+								handleUserListEvent(receivedPdu);
+							} catch (Exception e) {
+								ExceptionHandler.logException(e);
+							}
+							break;
 						case ChatPDU.LOGOUT_EVENT:
-							// Meldung vom Server, dass sich die Liste der
-							// angemeldeten User veraendert hat
+							
+							Logout_Confirm(receivedPdu);
 							try {
 								handleUserListEvent(receivedPdu);
 							} catch (Exception e) {
@@ -566,7 +636,6 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 							break;
 						}
 						break;
-					
 
 					case UNREGISTERED:
 						log.debug("Ankommende PDU im Zustand " + getStatus()

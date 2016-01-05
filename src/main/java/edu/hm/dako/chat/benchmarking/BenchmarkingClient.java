@@ -25,18 +25,11 @@ public class BenchmarkingClient implements BenchmarkingStartInterface, ChatClien
     // Daten aller Client-Threads zur Verwaltung der Statistik
     private SharedClientStatistics sharedData;
     private CpuUtilisationWatch cpuUtilisationWatch;
-    private int clients;
-    private int messages;
   
 
 
     @Override
     public synchronized void  setUserList(Vector<String> names) {
-    	for(int i = 0; i<clients;i=i+1)
-    	{
-    		names.addElement(""+i);
-    	}
-  
     	
     }
 
@@ -85,8 +78,8 @@ public class BenchmarkingClient implements BenchmarkingStartInterface, ChatClien
     	//parm.getImplementationType();
     	//parm.getMeasurementType();
     	//parm.getMessageLength();
-    	clients = parm.getNumberOfClients();
-    	messages = parm.getNumberOfMessages();
+    	//clients = parm.getNumberOfClients();
+    	//messages = parm.getNumberOfMessages();
     	//parm.getNumberOfRetries();
     	//parm.getRemoteServerAddress();
     	//parm.getRemoteServerPort();
@@ -145,6 +138,7 @@ public class BenchmarkingClient implements BenchmarkingStartInterface, ChatClien
         clientGui.setMessageLine("Alle " + parm.getNumberOfClients()
                 + " Clients-Threads gestartet");
        
+     
                
         
         

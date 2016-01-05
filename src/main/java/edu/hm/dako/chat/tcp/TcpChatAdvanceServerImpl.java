@@ -1,7 +1,5 @@
 package edu.hm.dako.chat.tcp;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +29,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 
 	private ChatPDU SaveWaitingListPDU;
 	private Connection saveConnection;
+	//private boolean waitlistExists = false;
 
 	// Threadpool fuer Woekerthreads
 	private final ExecutorService executorService;
@@ -122,9 +121,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 
 			log.debug("ChatWorker-Thread erzeugt, Threadname: "
 					+ Thread.currentThread().getName());
-			while (!finished && !Thread.currentThread().isInterrupted()// &&
-																		// waitingForConfirm==false
-			) {
+			while (!finished && !Thread.currentThread().isInterrupted()){
 				try {
 					// Warte auf naechste Nachricht des Clients und fuehre
 					// entsprechende Aktion aus
@@ -520,6 +517,8 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 					break;
 
 				case ChatPDU.CHAT_MESSAGE_REQUEST:
+					System.out.println("sie sind im message request" + "||||"
+							+ "        " + SaveWaitingListPDU.getUserName());
 					clients.createWaitList(receivedPdu.getUserName());
 					try {
 						clients.deleteWaitListEntry(receivedPdu.getUserName(),
@@ -543,26 +542,25 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 							SaveWaitingListPDU.getUserName(), userName);
 					if (clients.getWaitListSize(SaveWaitingListPDU
 							.getUserName()) == 0) {
+						System.out.println("sie sind im message confirm" + "||||"
+								+ "        " + SaveWaitingListPDU.getUserName());
 						clients.deleteWaitList(SaveWaitingListPDU.getUserName());
-						pdu = createLoginResponsePdu(SaveWaitingListPDU);
+						pdu = createChatMessageResponsePdu(SaveWaitingListPDU);
 
 						try {
 							if (clients.getClient(SaveWaitingListPDU
 									.getUserName()) != null) {
 								saveConnection.send(pdu);
-								log.debug("Login-Response-PDU an "
+								log.debug("Chat-Message-Response-PDU an "
 										+ SaveWaitingListPDU.getUserName()
 										+ " gesendet");
 							}
 						} catch (Exception e) {
-							log.error("Senden einer Login-Response-PDU an "
+							log.error("Chat-Message-Response-PDU an "
 									+ SaveWaitingListPDU.getUserName()
 									+ " nicht moeglich");
 							ExceptionHandler.logException(e);
 						}
-						pdu = createChatMessageResponsePdu(SaveWaitingListPDU);
-						sendMEssageUpdatePdu(SaveWaitingListPDU);
-
 					}
 					break;
 
@@ -634,6 +632,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 								SaveWaitingListPDU.getUserName(),
 								ChatClientConversationStatus.UNREGISTERED);
 						clients.deleteClient(SaveWaitingListPDU.getUserName());
+						logoutCounter.incrementAndGet();
 
 					}
 					break;

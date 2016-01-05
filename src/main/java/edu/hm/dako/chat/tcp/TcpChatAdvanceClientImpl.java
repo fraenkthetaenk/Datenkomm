@@ -580,11 +580,12 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 							}
 							break;
 						case ChatPDU.CHAT_MESSAGE_RESPONSE:
+							chatResponseReceived.set(true);
 							userInterface.setBlock(false);
 							break;
 
 						case ChatPDU.CHAT_MESSAGE_EVENT:
-
+							Message_Event(receivedPdu);
 							userInterface.setMessageLine(
 									receivedPdu.getUserName(),
 									receivedPdu.getMessage());

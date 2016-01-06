@@ -73,17 +73,7 @@ public class BenchmarkingClient implements BenchmarkingStartInterface, ChatClien
 
     @Override
     public void executeTest(UserInterfaceInputParameters parm, BenchmarkingClientUserInterface clientGui) {
-    	
-    	//parm.getClientThinkTime();
-    	//parm.getImplementationType();
-    	//parm.getMeasurementType();
-    	//parm.getMessageLength();
-    	//clients = parm.getNumberOfClients();
-    	//messages = parm.getNumberOfMessages();
-    	//parm.getNumberOfRetries();
-    	//parm.getRemoteServerAddress();
-    	//parm.getRemoteServerPort();
-    	//parm.getResponseTimeout();
+
     
    	
     	

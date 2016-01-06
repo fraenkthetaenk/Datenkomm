@@ -2,6 +2,7 @@ package edu.hm.dako.chat.tcp;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -66,7 +67,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 			try {
 				// Auf ankommende Verbindungsaufbauwuensche warten
 				System.out
-						.println("SimpleChatServer wartet auf Verbindungsanfragen von Clients...");
+						.println("AdvanceChatServer wartet auf Verbindungsanfragen von Clients...");
 				Connection connection = socket.accept();
 				log.debug("Neuer Verbindungsaufbauwunsch empfangen");
 
@@ -82,7 +83,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 
 	@Override
 	public void stop() throws Exception {
-		System.out.println("SimpleChatServer beendet sich");
+		System.out.println("AdvanceChatServer beendet sich");
 		clients.deleteAll(); // Loeschen der Userliste
 		Thread.currentThread().interrupt();
 		socket.close();
@@ -446,6 +447,14 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 				log.debug("Close Connection fuer " + userName
 						+ ", Laenge der Clientliste vor deleteClient: "
 						+ clients.size());
+				for (String s : new HashSet<String>(clients.getClientNameList())) {
+					ChatClientListEntry client = (ChatClientListEntry) clients
+							.getClient(s);
+					if (client.getWaitList().contains(userName)) {
+						client.getWaitList().remove(userName);
+					}
+				}
+
 				clients.deleteClient(userName);
 				log.debug("Laenge der Clientliste nach deleteClient fuer: "
 						+ userName + ": " + clients.size());
@@ -464,7 +473,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 		 * 
 		 * @throws Exception
 		 */
-		private void handleIncomingMessage() throws Exception {
+		private  void handleIncomingMessage() throws Exception {
 
 			// Warten auf naechste Nachricht
 
@@ -529,6 +538,13 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 				case ChatPDU.CHAT_MESSAGE_EVENT_CONFIRM:
 					clients.deleteWaitListEntry(receivedPdu.getEventUserName(),
 							userName);
+
+					clients.getClient(receivedPdu.getEventUserName())
+							.setNumberOfReceivedEventConfirms(
+									clients.getClient(
+											receivedPdu.getEventUserName())
+											.getNumberOfReceivedEventConfirms() + 1);
+
 					System.out.println("sie sind im message confirm" + "||||"
 							+ "        " + receivedPdu.getEventUserName());
 					System.out.println(clients.getWaitListSize(receivedPdu
@@ -540,7 +556,9 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 						try {
 							if (clients.getClient(receivedPdu
 									.getEventUserName()) != null) {
-								clients.getClient(receivedPdu.getEventUserName()).getConnection().send(pdu);
+								clients.getClient(
+										receivedPdu.getEventUserName())
+										.getConnection().send(pdu);
 								log.debug("Chat-Message-Response-PDU an "
 										+ receivedPdu.getEventUserName()
 										+ " gesendet");
@@ -558,6 +576,12 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 
 					clients.deleteWaitListEntry(receivedPdu.getEventUserName(),
 							userName);
+					clients.getClient(receivedPdu.getEventUserName())
+							.setNumberOfReceivedEventConfirms(
+									clients.getClient(
+											receivedPdu.getEventUserName())
+											.getNumberOfReceivedEventConfirms() + 1);
+
 					System.out.println("sie sind im login confirm" + "||||"
 							+ "        " + receivedPdu.getEventUserName());
 					System.out.println(clients.getWaitListSize(receivedPdu
@@ -569,7 +593,9 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 						try {
 							if (clients.getClient(receivedPdu
 									.getEventUserName()) != null) {
-								clients.getClient(receivedPdu.getEventUserName()).getConnection().send(pdu);
+								clients.getClient(
+										receivedPdu.getEventUserName())
+										.getConnection().send(pdu);
 								log.debug("Login-Response-PDU an "
 										+ receivedPdu.getEventUserName()
 										+ " gesendet");
@@ -592,10 +618,18 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 				case ChatPDU.LOGOUT_EVENT_CONFIRM:
 					clients.deleteWaitListEntry(receivedPdu.getEventUserName(),
 							userName);
+
+					clients.getClient(receivedPdu.getEventUserName())
+							.setNumberOfReceivedEventConfirms(
+									clients.getClient(
+											receivedPdu.getEventUserName())
+											.getNumberOfReceivedEventConfirms() + 1);
+
 					System.out.println("sie sind im logout cpnfirm" + "||||"
 							+ "        " + receivedPdu.getEventUserName());
 					System.out.println(clients.getWaitListSize(receivedPdu
 							.getEventUserName()));
+					//System.out.println("übrige clients" + clients.printClientList());
 					if (clients.getWaitListSize(receivedPdu.getEventUserName()) == 0) {
 						clients.deleteWaitList(receivedPdu.getEventUserName());
 
@@ -604,7 +638,9 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 						try {
 							if (clients.getClient(receivedPdu
 									.getEventUserName()) != null) {
-								clients.getClient(receivedPdu.getEventUserName()).getConnection().send(pdu);
+								clients.getClient(
+										receivedPdu.getEventUserName())
+										.getConnection().send(pdu);
 								log.debug("Logout-Response-PDU an "
 										+ receivedPdu.getEventUserName()
 										+ " gesendet");
@@ -619,8 +655,30 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 						clients.changeClientStatus(
 								receivedPdu.getEventUserName(),
 								ChatClientConversationStatus.UNREGISTERED);
-						clients.deleteClient(receivedPdu.getEventUserName());
+						
+						
+					//	clients.getClient(receivedPdu.getEventUserName()).getConnection().close();
+						
+//						
+//						for (String s : new HashSet<String>(clients.getClientNameList())) {
+//							ChatClientListEntry client = (ChatClientListEntry) clients
+//									.getClient(s);
+//							if (client.getWaitList().contains(receivedPdu.getEventUserName())) {
+//								client.getWaitList().remove(receivedPdu.getEventUserName());
+//							}
+//							}
+						//clients.getClient(receivedPdu.getEventUserName()).setFinished(true);
+					//	System.out.println("übrige clients" + clients.printClientList());
+						//System.out.println(
+								clients.deleteClient(receivedPdu.getEventUserName())
+								//)
+								;
 						logoutCounter.incrementAndGet();
+						//System.out.println("übrige clients" + clients.printClientList());
+						
+						
+						//connection.
+						
 
 					}
 					break;
@@ -655,6 +713,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 				// );
 
 				ChatClientListEntry client = clients.getClient(s);
+				client.setNumberOfReceivedChatMessages(client.getNumberOfReceivedChatMessages()+1);
 				try {
 					if (client != null) {
 

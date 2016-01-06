@@ -371,6 +371,7 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 		requestPdu.setEventUserName(receivedPdu.getEventUserName());
 		requestPdu.setClientThreadName(Thread.currentThread().getName());
 		requestPdu.setServerThreadName(receivedPdu.getServerThreadName());
+		
 
 		try {
 			connection.send(requestPdu);
@@ -389,6 +390,7 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 		requestPdu.setEventUserName(receivedPdu.getEventUserName());
 		requestPdu.setClientThreadName(Thread.currentThread().getName());
 		requestPdu.setServerThreadName(receivedPdu.getServerThreadName());
+		
 
 		try {
 			connection.send(requestPdu);
@@ -407,6 +409,7 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 		requestPdu.setEventUserName(receivedPdu.getEventUserName());
 		requestPdu.setClientThreadName(Thread.currentThread().getName());
 		requestPdu.setServerThreadName(receivedPdu.getServerThreadName());
+		
 		
 		try {
 			connection.send(requestPdu);
@@ -607,10 +610,13 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 							setStatus(ChatClientConversationStatus.UNREGISTERED);
 							userInterface.logoutComplete();
 							userInterface.setBlock(true);
+							logoutResponsePdu = receivedPdu;
 							Thread.currentThread().setName(
 									"Listener" + "-" + userName);
 							log.debug("Logout-Response-PDU fuer Client "
 									+ receivedPdu.getUserName() + " empfangen");
+							finished=true;
+							
 
 							break;
 

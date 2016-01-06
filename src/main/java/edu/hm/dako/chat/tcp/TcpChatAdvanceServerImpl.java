@@ -51,6 +51,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 	// Zaehler fuer Logouts und gesendete Events nur zum Tests
 	private static AtomicInteger logoutCounter = new AtomicInteger(0);
 	private static AtomicInteger eventCounter = new AtomicInteger(0);
+	
 
 	public TcpChatAdvanceServerImpl(ExecutorService executorService,
 			ServerSocket socket) {
@@ -112,8 +113,6 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 		private String userName; // Username des durch den Worker-Thread
 									// bedienten Clients
 
-		// private ChatPDU SaveWaitingListPDU;
-		// private Connection saveConnection;
 
 		private ChatWorker(Connection con) {
 			this.connection = con;
@@ -629,7 +628,6 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 							+ "        " + receivedPdu.getEventUserName());
 					System.out.println(clients.getWaitListSize(receivedPdu
 							.getEventUserName()));
-					//System.out.println("übrige clients" + clients.printClientList());
 					if (clients.getWaitListSize(receivedPdu.getEventUserName()) == 0) {
 						clients.deleteWaitList(receivedPdu.getEventUserName());
 
@@ -656,29 +654,22 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 								receivedPdu.getEventUserName(),
 								ChatClientConversationStatus.UNREGISTERED);
 						
-						
-					//	clients.getClient(receivedPdu.getEventUserName()).getConnection().close();
-						
-//						
-//						for (String s : new HashSet<String>(clients.getClientNameList())) {
-//							ChatClientListEntry client = (ChatClientListEntry) clients
-//									.getClient(s);
-//							if (client.getWaitList().contains(receivedPdu.getEventUserName())) {
-//								client.getWaitList().remove(receivedPdu.getEventUserName());
-//							}
-//							}
-						//clients.getClient(receivedPdu.getEventUserName()).setFinished(true);
-					//	System.out.println("übrige clients" + clients.printClientList());
-						//System.out.println(
-								clients.deleteClient(receivedPdu.getEventUserName())
-								//)
-								;
+					
+						for (String s : new HashSet<String>(clients.getClientNameList())) {
+							ChatClientListEntry client = (ChatClientListEntry) clients
+									.getClient(s);
+							if (client.getWaitList().contains(receivedPdu.getEventUserName())) {
+								client.getWaitList().remove(receivedPdu.getEventUserName());
+							}
+							}
+						clients.getClient(receivedPdu.getEventUserName()).setFinished(true);
+					
 						logoutCounter.incrementAndGet();
-						//System.out.println("übrige clients" + clients.printClientList());
+						if(clients.deleteClient(receivedPdu.getEventUserName())){
+						this.finished = true;}
+				
 						
-						
-						//connection.
-						
+											
 
 					}
 					break;

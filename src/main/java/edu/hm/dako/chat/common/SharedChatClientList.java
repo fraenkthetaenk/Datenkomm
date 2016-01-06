@@ -181,7 +181,7 @@ public class SharedChatClientList {
 
 				for (String s : new HashSet<String>(clients.keySet())) {		
 					ChatClientListEntry client = (ChatClientListEntry) clients.get(s);
-					if (client.getWaitList().size() != 0) {
+					if (client.getWaitList().size()!= 0){
 						log.debug("Loeschen nicht moeglich, da Client " + s + " noch in der Warteliste von " +
 								client.getUserName() + " ist" );
 						return deletedFlag;
@@ -418,5 +418,24 @@ public class SharedChatClientList {
 			}
 		}
 		return stringBuilder.toString();
+	}
+	
+	/**
+	 * Loescht einen Client zwangsweise inkl. aller Einträge in Wartelisten.
+	 *
+	 * @param userName Name des Clients
+	 */
+	public synchronized void deleteClientWithoutCondition(String userName) {
+	    log.debug("Client  " + userName + " zwangsweise aus allen Listen entfernen");
+	    for (String s : new HashSet<String>(clients.keySet())) {
+	        ChatClientListEntry client = (ChatClientListEntry) clients.get(s);
+	        if (client.getWaitList().contains(userName)) {
+	            client.getWaitList().remove(userName);
+	        }
+	    }
+
+	    // Client kann nun entfernt werden
+	    clients.remove(userName);
+	    log.debug("Client  " + userName + " vollstaendig aus allen Wartelisten entfernt");
 	}
 }

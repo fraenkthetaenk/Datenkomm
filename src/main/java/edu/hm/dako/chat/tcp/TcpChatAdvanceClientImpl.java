@@ -590,6 +590,7 @@ public class TcpChatAdvanceClientImpl extends AbstractClient {
 									receivedPdu.getUserName(),
 									receivedPdu.getMessage());
 							break;
+					
 						default:
 							log.debug("Ankommende PDU im Zustand "
 									+ getStatus() + " wird verworfen");

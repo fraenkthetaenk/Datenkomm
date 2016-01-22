@@ -97,7 +97,7 @@ public class ChatClientSwingGUI extends JFrame implements ChatClientUserInterfac
 
 	private Integer intServerPort;
 
-	private TcpChatAdvanceClientImpl communicator;
+	private TcpChatSimpleClientImpl communicator;
 
 	private AboutDialog aboutDialog;
 
@@ -317,7 +317,7 @@ public class ChatClientSwingGUI extends JFrame implements ChatClientUserInterfac
 				log.debug("Serverport: " + intServerPort);
 				serverNameOrIp = txtServerNameOrIp.getText();
 				log.debug("Serveradresse: " + serverNameOrIp);				
-				communicator = new TcpChatAdvanceClientImpl(this, intServerPort.intValue(), serverNameOrIp);
+				communicator = new TcpChatSimpleClientImpl(this, intServerPort.intValue(), serverNameOrIp);
 			}
 		} else {
 			System.exit(9);

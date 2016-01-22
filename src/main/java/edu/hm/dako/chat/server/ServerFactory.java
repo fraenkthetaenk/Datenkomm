@@ -40,7 +40,7 @@ public final class ServerFactory {
         log.debug("ChatServer (" + type.toString() + ") wird gestartet");
         switch (type) {
             case TCPImplementation:
-                return new TcpChatAdvanceServerImpl(Executors.newCachedThreadPool(), getDecoratedServerSocket(
+                return new TcpChatSimpleServerImpl(Executors.newCachedThreadPool(), getDecoratedServerSocket(
                         new TcpServerSocket(DEFAULT_SERVER_PORT,
                         					SERVER_SEND_BUFFER_SIZE, 
                         					SERVER_RECEIVE_BUFFER_SIZE)));

@@ -23,7 +23,7 @@ public final class ClientFactory {
 		try {
 			switch (param.getImplementationType()) {
 				case TCPImplementation:
-					return new TcpChatAdvanceClientImpl(userInterface, param.getRemoteServerPort(),
+					return new TcpChatSimpleClientImpl(userInterface, param.getRemoteServerPort(),
 							param.getRemoteServerAddress(), numberOfClient, param.getMessageLength(),
 							param.getNumberOfMessages(), param.getClientThinkTime(),
 							param.getNumberOfRetries(), param.getResponseTimeout(),

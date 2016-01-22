@@ -6,6 +6,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.sun.swing.internal.plaf.synth.resources.synth;
+
 import edu.hm.dako.chat.client.AbstractClient;
 import edu.hm.dako.chat.client.ChatClientUserInterface;
 import edu.hm.dako.chat.common.ChatClientConversationStatus;
@@ -382,7 +384,7 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 		messageCounter.getAndIncrement();
 		requestPdu.setSequenceNumber(messageCounter.get());
 		userInterface.setBlock(true);
-		
+
 		try {
 			connection.send(requestPdu);
 			log.debug("Chat-Message-Request-PDU fuer Client " + name
@@ -421,7 +423,7 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 		/**
 		 * Bearbeitung aller ankommenden Nachrichten vom Server
 		 */
-		public void run() {
+		public synchronized void run() {
 
 			ChatPDU receivedPdu = null;
 
@@ -467,6 +469,7 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 										+ receivedPdu.getUserName()
 										+ " empfangen");
 							}
+
 							break;
 
 						case ChatPDU.LOGIN_EVENT:
@@ -489,21 +492,6 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 
 					case REGISTERED:
 						switch (receivedPdu.getPduType()) {
-						
-//						case ChatPDU.LOGOUT_RESPONSE:
-//					
-//						
-//							// Login-Bestaetigung vom Server angekommen
-//
-//							setStatus(ChatClientConversationStatus.UNREGISTERED);
-//							userInterface.logoutComplete();
-//							userInterface.setBlock(true);
-//							Thread.currentThread().setName(
-//									"Listener" + "-" + userName);
-//							log.debug("Logout-Response-PDU fuer Client "
-//									+ receivedPdu.getUserName() + " empfangen");
-//
-//							break;
 
 						case ChatPDU.LOGIN_EVENT:
 						case ChatPDU.LOGOUT_EVENT:
@@ -516,14 +504,16 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 							}
 							break;
 						case ChatPDU.CHAT_MESSAGE_RESPONSE:
-						
+							// Nachrichten Bestätigung vom Server bekommmen
+							chatResponseReceived.set(true);
 							userInterface.setBlock(false);
 							break;
 
 						case ChatPDU.CHAT_MESSAGE_EVENT:
-								userInterface.setMessageLine(
-								receivedPdu.getUserName(),
-								receivedPdu.getMessage());
+							// Nachrichten-Event vom Server bekommen
+							userInterface.setMessageLine(
+									receivedPdu.getUserName(),
+									receivedPdu.getMessage());
 							break;
 
 						default:
@@ -536,10 +526,9 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 						switch (receivedPdu.getPduType()) {
 
 						case ChatPDU.LOGOUT_RESPONSE:
-							
-							
-							// Login-Bestaetigung vom Server angekommen
 
+							// Logout-Bestaetigung vom Server angekommen
+							finished = true;
 							setStatus(ChatClientConversationStatus.UNREGISTERED);
 							userInterface.logoutComplete();
 							userInterface.setBlock(true);
@@ -548,10 +537,9 @@ public class TcpChatSimpleClientImpl extends AbstractClient {
 							log.debug("Logout-Response-PDU fuer Client "
 									+ receivedPdu.getUserName() + " empfangen");
 
+							logoutResponsePdu = receivedPdu;
 							break;
-				
-							
-							
+
 						case ChatPDU.LOGIN_EVENT:
 						case ChatPDU.LOGOUT_EVENT:
 							// Meldung vom Server, dass sich die Liste der

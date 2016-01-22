@@ -51,7 +51,6 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 	// Zaehler fuer Logouts und gesendete Events nur zum Tests
 	private static AtomicInteger logoutCounter = new AtomicInteger(0);
 	private static AtomicInteger eventCounter = new AtomicInteger(0);
-	
 
 	public TcpChatAdvanceServerImpl(ExecutorService executorService,
 			ServerSocket socket) {
@@ -113,7 +112,6 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 		private String userName; // Username des durch den Worker-Thread
 									// bedienten Clients
 
-
 		private ChatWorker(Connection con) {
 			this.connection = con;
 		}
@@ -153,6 +151,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 			pdu.setServerThreadName(Thread.currentThread().getName());
 			pdu.setClientThreadName(receivedPdu.getClientThreadName());
 			pdu.setClientStatus(ChatClientConversationStatus.UNREGISTERING);
+			eventCounter.incrementAndGet();
 			return pdu;
 		}
 
@@ -173,6 +172,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 			pdu.setEventUserName(receivedPdu.getUserName());
 			pdu.setUserName(receivedPdu.getUserName());
 			pdu.setClientStatus(ChatClientConversationStatus.REGISTERING);
+			eventCounter.incrementAndGet();
 			return pdu;
 		}
 
@@ -195,6 +195,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 					.getUserName());
 			if (client != null) {
 				pdu.setClientStatus(client.getStatus());
+				pdu.setServerTime(System.nanoTime() - client.getStartTime());
 			} else {
 				pdu.setClientStatus(ChatClientConversationStatus.REGISTERED);
 			}
@@ -219,6 +220,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 			pdu.setSequenceNumber(receivedPdu.getSequenceNumber());
 			pdu.setClientStatus(ChatClientConversationStatus.REGISTERED);
 			pdu.setMessage(receivedPdu.getMessage());
+			eventCounter.incrementAndGet();
 			return pdu;
 		}
 
@@ -240,6 +242,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 			pdu.setClientStatus(ChatClientConversationStatus.REGISTERED);
 			ChatClientListEntry client = clients.getClient(receivedPdu
 					.getUserName());
+			pdu.setNumberOfSentEvents(eventCounter.longValue());
 
 			if (client != null) {
 				pdu.setClientStatus(client.getStatus());
@@ -272,10 +275,12 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 			pdu.setClientThreadName(receivedPdu.getClientThreadName());
 			pdu.setUserName(receivedPdu.getEventUserName());
 			pdu.setClientStatus(ChatClientConversationStatus.UNREGISTERED);
+			pdu.setNumberOfSentEvents(eventCounter.longValue());
 
 			ChatClientListEntry client = clients.getClient(receivedPdu
 					.getEventUserName());
 			if (client != null) {
+				pdu.setServerTime(System.nanoTime() - client.getStartTime());
 				pdu.setClientStatus(client.getStatus());
 				pdu.setNumberOfSentEvents(client.getNumberOfSentEvents());
 				pdu.setNumberOfLostEventConfirms(client
@@ -353,7 +358,7 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 
 		/**
 		 * Login-Request bearbeiten: Neuen Client anlegen, alle Clients
-		 * informieren, Response senden
+		 * informieren
 		 * 
 		 * @param receivedPdu
 		 *            Empfangene PDU
@@ -407,6 +412,14 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 			}
 		}
 
+		/**
+		 * Logout Request Bearbeiten, alle CLients Informieren
+		 * 
+		 * @param receivedPdu
+		 *            Epfangende PDU
+		 * @param con
+		 *            Verbindung zm Client der den Logout benatragr
+		 */
 		private void logout(ChatPDU receivedPdu, Connection con) {
 			ChatPDU pdu;
 			if (clients.existsClient(receivedPdu.getUserName())) {
@@ -446,15 +459,8 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 				log.debug("Close Connection fuer " + userName
 						+ ", Laenge der Clientliste vor deleteClient: "
 						+ clients.size());
-				for (String s : new HashSet<String>(clients.getClientNameList())) {
-					ChatClientListEntry client = (ChatClientListEntry) clients
-							.getClient(s);
-					if (client.getWaitList().contains(userName)) {
-						client.getWaitList().remove(userName);
-					}
-				}
 
-				clients.deleteClient(userName);
+				deleteClientWithoutCondition(userName);
 				log.debug("Laenge der Clientliste nach deleteClient fuer: "
 						+ userName + ": " + clients.size());
 			}
@@ -467,12 +473,71 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 		}
 
 		/**
+		 * Loescht einen Client zwangsweise inkl. aller Einträge in Wartelisten.
+		 *
+		 * @param userName
+		 *            Name des Clients
+		 */
+		public synchronized void deleteClientWithoutCondition(String userName) {
+			log.debug("Client  " + userName
+					+ " zwangsweise aus allen Listen entfernen");
+			for (String s : new HashSet<String>(clients.gcClientList())) {
+				ChatClientListEntry client = (ChatClientListEntry) clients
+						.getClient(s);
+				if (client.getWaitList().contains(userName)) {
+					client.getWaitList().remove(userName);
+					// Hier kann es zu Fehler kommen, falls der client aus
+					// dessen Waitlist der Client der sich ausloggt der letzte
+					// ist , dies sollte mit dem Auskommentierten code behoben
+					// werden war aber leider nicht erfolgreich.
+					//
+					// Die Idee für die Lösung dieses Problems finden sie hier:
+
+					// if(client.getWaitList().size()==0)
+					// {
+					// ChatPDU pdu = new ChatPDU();
+					//
+					//
+					// pdu.setUserName(client.getUserName());
+					// pdu.setEventUserName(client.getUserName());
+					//
+					// System.out.println("xy");
+					// switch (client.getStatus()) {
+					// case UNREGISTERING:
+					// pdu.setPduType(ChatPDU.LOGOUT_EVENT_CONFIRM);
+					// break;
+					// case REGISTERING:
+					// pdu.setPduType(ChatPDU.LOGIN_EVENT_CONFIRM);
+					// break;
+					// case REGISTERED:
+					// pdu.setPduType(ChatPDU.CHAT_MESSAGE_EVENT_CONFIRM);
+					// break;
+					// default:
+					// break;
+					// }
+					// try {
+					// clients.getClient(client.getUserName()).getConnection().send(pdu);
+					// } catch (Exception e) {
+					// // TODO Auto-generated catch block
+					// e.printStackTrace();
+					// }
+					// }
+				}
+			}
+
+			// Client kann nun entfernt werden
+			clients.deleteClient(userName);
+			log.debug("Client  " + userName
+					+ " vollstaendig aus allen Wartelisten entfernt");
+		}
+
+		/**
 		 * Verarbeitung einer ankommenden Nachricht eines Clients
 		 * (Zustandsautomat des Servers)
 		 * 
 		 * @throws Exception
 		 */
-		private  void handleIncomingMessage() throws Exception {
+		private void handleIncomingMessage() throws Exception {
 
 			// Warten auf naechste Nachricht
 
@@ -505,8 +570,8 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 
 					break;
 
-				// DIeser Case ist seler geschrieben und evt. nicht nötig
 				case ChatPDU.LOGOUT_REQUEST:
+					// Hier wird ein Logout-Request von einem Client behandelt
 					log.debug("Logout-Request-PDU fuer "
 							+ receivedPdu.getUserName() + " empfangen");
 					System.out.println("sie sind im logout request" + "||||"
@@ -516,6 +581,8 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 					break;
 
 				case ChatPDU.CHAT_MESSAGE_REQUEST:
+					// Hier wird eine Chat-Message-Request von einem Client
+					// bearbeitet
 					System.out.println("sie sind im message request" + "||||"
 							+ "        " + receivedPdu.getUserName());
 					clients.createWaitList(receivedPdu.getUserName());
@@ -535,6 +602,15 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 					break;
 
 				case ChatPDU.CHAT_MESSAGE_EVENT_CONFIRM:
+					// Hier wird die Chat-Message-Event-Confirm vom Server
+					// bearbeitet,
+					// aus der Warteliste des Clients, der für die
+					// korrespondirende Chat-Message-Request-Pdu verantwortlich
+					// ist ,
+					// wird der client gelöscht, welcher den confirm gesendet
+					// hat,
+					// sollte die Warteliste danch leer sien wird eine
+					// Chat-Message-Response PDU gesendet
 					clients.deleteWaitListEntry(receivedPdu.getEventUserName(),
 							userName);
 
@@ -572,7 +648,13 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 					break;
 
 				case ChatPDU.LOGIN_EVENT_CONFIRM:
-
+					// Hier wird die Login Event Confirm vom Server bearbeitet,
+					// aus der Warteliste des Clients, der für die
+					// korrespondirende Login-Request-Pdu verantwortlich ist ,
+					// wird der client gelöscht, welcher den confirm gesendet
+					// hat,
+					// sollte die Warteliste danch leer sien wird eine
+					// Login-Response PDU gesendet
 					clients.deleteWaitListEntry(receivedPdu.getEventUserName(),
 							userName);
 					clients.getClient(receivedPdu.getEventUserName())
@@ -615,6 +697,13 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 					break;
 
 				case ChatPDU.LOGOUT_EVENT_CONFIRM:
+					// Hier wird die Logout-Event-Confirm vom Server bearbeitet,
+					// aus der Warteliste des Clients, der für die
+					// korrespondirende Logout-Request-Pdu verantwortlich ist ,
+					// wird der client gelöscht, welcher den confirm gesendet
+					// hat,
+					// sollte die Warteliste danch leer sien wird eine
+					// Logout-Response PDU gesendet
 					clients.deleteWaitListEntry(receivedPdu.getEventUserName(),
 							userName);
 
@@ -653,23 +742,40 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 						clients.changeClientStatus(
 								receivedPdu.getEventUserName(),
 								ChatClientConversationStatus.UNREGISTERED);
-						
-					
-						for (String s : new HashSet<String>(clients.getClientNameList())) {
-							ChatClientListEntry client = (ChatClientListEntry) clients
-									.getClient(s);
-							if (client.getWaitList().contains(receivedPdu.getEventUserName())) {
-								client.getWaitList().remove(receivedPdu.getEventUserName());
-							}
-							}
-						clients.getClient(receivedPdu.getEventUserName()).setFinished(true);
-					
+
+						// Hier gibt es das Problem, die Clients ordentlich aus
+						// der SharedClientList zu Löschen
+						// Die Überprüfung ob der Client gelöscht werden darf
+						// macht hierbei probleme
+
 						logoutCounter.incrementAndGet();
-						if(clients.deleteClient(receivedPdu.getEventUserName())){
-						this.finished = true;}
-				
-						
-											
+						// this.finished=true;
+						// closeConnection();
+						if (clients
+								.deleteClient(receivedPdu.getEventUserName()))
+							;// {
+								// this.finished = true;}
+						// nachdem wir den ChatWorker nicht einfach auf finished
+						// setzen können und der client noch in der liste steht
+						// haben wir probleme
+						// da dieser bei neuen request noch benachrichtigt wird,
+						// dieser aber nicht mehr antwortet
+						// Das Problem wäre einfach gelöst, wenn der Client
+						// gelöscht und der Chatworker auf finished gesetzt
+						// werden könnte
+
+						// Ein ALternativer Ansatz zu diesem Porblem (als der
+						// der in deleteClietWithoutConditen() beschrieben ist,
+						// wäre: Am Ende jeder Logout-Event-Confirm zu schauen
+						// ob der Client gelöscht werden darf, wenn dies nicht
+						// der Fall ist wird keine PDU gesendet.
+						// Sobald ein Client gelöscht werden darf, geht man mit
+						// einer Schleife über alle clients welche im Staus
+						// Unregistering sind und sendet ihnen die
+						// Logout-event-confirm PDU
+						// (zur bestimmung ob ein Client gelöscht werden darf
+						// oder nicht würde die vordefinierte Methode
+						// clients.deleteClient() verwendet werden.
 
 					}
 					break;
@@ -687,6 +793,12 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 
 		}
 
+		/**
+		 * Hier wird eine Nachricht an alle aktive clients gesendet
+		 * 
+		 * @param pdu
+		 *            die Nachricht die vertailt werden soll
+		 */
 		private void sendMEssageUpdatePdu(ChatPDU pdu) {
 
 			// Liste der eingeloggten User ermitteln
@@ -704,7 +816,8 @@ public class TcpChatAdvanceServerImpl implements ChatServer {
 				// );
 
 				ChatClientListEntry client = clients.getClient(s);
-				client.setNumberOfReceivedChatMessages(client.getNumberOfReceivedChatMessages()+1);
+				client.setNumberOfReceivedChatMessages(client
+						.getNumberOfReceivedChatMessages() + 1);
 				try {
 					if (client != null) {
 

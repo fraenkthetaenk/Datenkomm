@@ -102,7 +102,8 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 	private class ChatWorker implements Runnable {
 
 		private Connection connection; // Verbindungs-Handle
-		private boolean finished = false;
+		private boolean finished = false; // Gibt an ob der Chat Worker aktuell
+											// Läuft oder nicht
 		private String userName; // Username des durch den Worker-Thread
 									// bedienten Clients
 
@@ -187,6 +188,7 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 					.getUserName());
 			if (client != null) {
 				pdu.setClientStatus(client.getStatus());
+				pdu.setServerTime(System.nanoTime() - client.getStartTime());
 			} else {
 				pdu.setClientStatus(ChatClientConversationStatus.REGISTERED);
 			}
@@ -268,6 +270,7 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 			ChatClientListEntry client = clients.getClient(receivedPdu
 					.getUserName());
 			if (client != null) {
+				pdu.setServerTime(System.nanoTime() - client.getStartTime());
 				pdu.setClientStatus(client.getStatus());
 				pdu.setNumberOfSentEvents(client.getNumberOfSentEvents());
 				pdu.setNumberOfLostEventConfirms(client
@@ -472,18 +475,29 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 							ChatClientConversationStatus.REGISTERED);
 					break;
 
-				// DIeser Case ist seler geschrieben und evt. nicht nötig
 				case ChatPDU.LOGOUT_REQUEST:
+					// Ein Client Möchte Sich ausloggen,
+					// Client aus der Client-Liste austragen
 					log.debug("Logout-Request-PDU fuer "
 							+ receivedPdu.getUserName() + " empfangen");
 					logout(receivedPdu, connection);
-					
+
 					clients.changeClientStatus(receivedPdu.getUserName(),
 							ChatClientConversationStatus.UNREGISTERED);
-					clients.deleteClient(receivedPdu.getUserName());
+					this.finished = true;
+					this.connection.close();
+					clients.getClient(receivedPdu.getUserName()).setFinished(true);
+					clients.getClient(receivedPdu.getUserName()).getConnection().close();
+					//System.out.println(""+
+							clients.deleteClient(receivedPdu.getUserName()); // UserName());
+					//);
+					System.out.println(clients.printClientList());
+
+					logoutCounter.incrementAndGet();
 					break;
 
 				case ChatPDU.CHAT_MESSAGE_REQUEST:
+					// Ein Client möchte eine Nachricht senden
 					ChatPDU pdu;
 
 					pdu = createChatMessageEventPdu(receivedPdu);
@@ -504,6 +518,12 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 			}
 		}
 
+		/**
+		 * Eine Nachricht an alle Clients senden
+		 * 
+		 * @param pdu
+		 *            die Nachricht, welche gesendet werden soll
+		 */
 		private void sendMEssageUpdatePdu(ChatPDU pdu) {
 
 			// Liste der eingeloggten User ermitteln
@@ -521,6 +541,7 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 				// );
 
 				ChatClientListEntry client = clients.getClient(s);
+				client.incrNumberOfReceivedChatMessages();
 				try {
 					if (client != null) {
 
@@ -542,17 +563,16 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 				log.debug("User in Clientliste: " + receivedPdu.getUserName());
 				clients.changeClientStatus(receivedPdu.getUserName(),
 						ChatClientConversationStatus.UNREGISTERING);
-			
+
 				log.debug("User " + receivedPdu.getUserName()
 						+ " nun nicht mehr in Clientliste");
 				log.debug("Laenge der Clientliste: " + clients.size());
 
 				pdu = createLogoutEventPdu(receivedPdu);
-				
+
 				sendLoginListUpdateEvent(pdu);
 
 				pdu = createLogoutResponsePdu(receivedPdu);
-				
 
 				try {
 					if (clients.getClient(userName) != null) {
@@ -565,6 +585,9 @@ public class TcpChatSimpleServerImpl implements ChatServer {
 							+ receivedPdu.getUserName() + " nicht moeglich");
 					ExceptionHandler.logException(e);
 				}
+				clients.changeClientStatus(receivedPdu.getUserName(),
+						ChatClientConversationStatus.UNREGISTERED);
+
 
 			}
 		}
